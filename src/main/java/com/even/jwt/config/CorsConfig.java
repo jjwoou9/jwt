@@ -1,4 +1,4 @@
-package com.even.jwt.controller;
+package com.even.jwt.config;
 
 
 import org.springframework.context.annotation.Bean;
