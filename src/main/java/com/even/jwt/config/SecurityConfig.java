@@ -1,20 +1,25 @@
 package com.even.jwt.config;
 
-import com.even.jwt.config.jwt.JwtAUthenticationFilter;
-import com.even.jwt.filter.MyFilter1;
+import com.even.jwt.config.jwt.JwtAuthenticationFilter;
+import com.even.jwt.config.jwt.JwtAuthorizationFilter;
 import com.even.jwt.filter.MyFilter3;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.even.jwt.repsoitory.UserRepository;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import org.springframework.security.web.context.SecurityContextPersistenceFilter;
 
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
 
-    @Autowired
-    private CorsConfig corsConfig;
+    private final CorsConfig corsConfig;
+
+    private final UserRepository userRepository;
+
+    public SecurityConfig(CorsConfig corsConfig, UserRepository userRepository) {
+        this.corsConfig = corsConfig;
+        this.userRepository = userRepository;
+    }
+
 
     @Override
     protected void configure(HttpSecurity http) throws Exception {
@@ -25,7 +30,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .addFilter(corsConfig.corsFilter()) //CrossOrigin(인증x)
                 .formLogin().disable() //form태그 로그인 안할거
                 .httpBasic().disable() //authorization 사용시 header에 id,pw 담아서 사용하는게 httpBasic 방식. (이 방식 사용시 id pw 암호화가 안되서 https를 써야 암호화 할수 있음)
-                .addFilter(new JwtAUthenticationFilter(authenticationManager())) //AuthenticationManager
+                .addFilter(new JwtAuthenticationFilter(authenticationManager())) //AuthenticationManager
+                .addFilter(new JwtAuthorizationFilter(authenticationManager(), userRepository))
                 .authorizeRequests()
                 .antMatchers("/api/v1/user/**").access("hasRole('ROLE_ADMIN') or hasRole('ROLE_USER')")
                 .antMatchers("/api/v1/manager/**").access("hasRole('ROLE_ADMIN') and hasRole('ROLE_USER')")

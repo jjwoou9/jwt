@@ -1,5 +1,8 @@
 package com.even.jwt.config.jwt;
 
+
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import com.even.jwt.config.auth.PrincipalDetails;
 import com.even.jwt.model.User;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -13,17 +16,17 @@ import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Date;
 
 // /login 요청하면 username, password post전송시
 // UsernamePasswordAuthenticationFilter동작함.
 // securityConfig에서 formLogin을 disable해놔서 다시 addFilter해야됨.
-public class JwtAUthenticationFilter extends UsernamePasswordAuthenticationFilter {
+public class JwtAuthenticationFilter extends UsernamePasswordAuthenticationFilter {
 
     private final AuthenticationManager authenticationManager;
 
-    public JwtAUthenticationFilter(AuthenticationManager authenticationManager) {
+    public JwtAuthenticationFilter(AuthenticationManager authenticationManager) {
         this.authenticationManager = authenticationManager;
     }
 
@@ -88,6 +91,16 @@ public class JwtAUthenticationFilter extends UsernamePasswordAuthenticationFilte
     @Override
     protected void successfulAuthentication(HttpServletRequest request, HttpServletResponse response, FilterChain chain, Authentication authResult) throws IOException, ServletException {
         System.out.println("successfulAuthentication ");
+        PrincipalDetails principalDetails = (PrincipalDetails) authResult.getPrincipal();
+
+        String jwtToken = JWT.create()
+                .withSubject(principalDetails.getUsername())
+                .withExpiresAt(new Date(System.currentTimeMillis()+(60000 *10)))
+                .withClaim("id", principalDetails.getUser().getId())
+                .withClaim("username", principalDetails.getUser().getUsername())
+                .sign(Algorithm.HMAC512("evengom")); //RSA방식이 아닌 Hash암호 방식
+
+        response.addHeader("Authorization", "Bearer "+jwtToken);
         super.successfulAuthentication(request, response, chain, authResult);
     }
 }
